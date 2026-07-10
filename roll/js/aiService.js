@@ -1,15 +1,33 @@
 const AIService = (() => {
 
+  /**
+   * Maps the UI's length labels to concrete constraints the model will
+   * actually follow — vague labels like "Short" get ignored otherwise.
+   */
+  function lengthGuidance(length) {
+    const map = {
+      "Short & punchy": "Each caption's 'caption' field MUST be under 60 characters total. One punchy line, no exceptions.",
+      "Medium": "Each caption's 'caption' field should be roughly 60-150 characters — a couple of sentences.",
+      "Long & storytelling": "Each caption's 'caption' field should be roughly 150-300 characters — a short story or mini-narrative."
+    };
+    return map[length] || map["Medium"];
+  }
+
+  /**
+   * Builds the prompt sent to the model. Kept provider-agnostic on purpose.
+   */
   function buildPrompt({ description, tone, platform, length }) {
     return `You are a social media caption writer for influencers and content creators. Generate 6 different captions for a ${platform} post.
 
 ${description ? `Post description: "${description}"` : "Use the attached photo as the basis for the captions."}
 Tone: ${tone}
-Length: ${length}
+
+STRICT LENGTH REQUIREMENT: ${lengthGuidance(length)}
+This length limit applies to the main "caption" field specifically — treat it as a hard constraint, not a suggestion. Count characters before finalizing each caption.
 
 Rules:
 - Each caption must be genuinely different in angle/style, not just reworded
-- Keep captions native to ${platform} (short and punchy for TikTok/Twitter/X, can be longer for Instagram/LinkedIn)
+- Keep captions native to ${platform} (short and punchy for TikTok/Twitter/X, can be longer for Instagram/LinkedIn) — but the length requirement above always takes priority over this
 - Avoid generic filler like "check out this amazing photo"
 - For each caption also provide: 5 relevant hashtags, 2-3 fitting emoji, a short version (under 60 characters), and a one-line CTA suggestion
 - Respond ONLY with valid JSON, no markdown, no backticks, in this exact array format:
