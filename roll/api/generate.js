@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing 'parts' in request body" });
   }
 
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+   const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
   try {
     const geminiRes = await fetch(GEMINI_URL, {
