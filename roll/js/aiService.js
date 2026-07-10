@@ -1,18 +1,5 @@
-/**
- * aiService.js
- * ---------------------------------------------------------------------------
- * The ONLY file in this project that knows which AI provider is in use.
- * Every other file calls generateCaptions() and never touches the
- * underlying provider directly. Currently using Google Gemini's free API
- * (no visitor login required, unlike the earlier Puter version).
- * ---------------------------------------------------------------------------
- */
-
 const AIService = (() => {
 
-  /**
-   * Builds the prompt sent to the model. Kept provider-agnostic on purpose.
-   */
   function buildPrompt({ description, tone, platform, length }) {
     return `You are a social media caption writer for influencers and content creators. Generate 6 different captions for a ${platform} post.
 
@@ -29,21 +16,12 @@ Rules:
 [{"caption": "...", "hashtags": "#tag1 #tag2 #tag3 #tag4 #tag5", "emoji": "✨🌅", "short": "...", "cta": "..."}]`;
   }
 
-  /**
-   * Converts a data URL (e.g. "data:image/jpeg;base64,...") into the
-   * { mimeType, data } shape Gemini's API expects for inline images.
-   */
   function dataUrlToInlinePart(dataUrl) {
     const [header, base64Data] = dataUrl.split(",");
     const mimeType = header.match(/data:(.*);base64/)[1];
     return { inline_data: { mime_type: mimeType, data: base64Data } };
   }
 
-  /**
-   * Current provider: Google Gemini, called through our own /api/generate
-   * serverless function. The API key lives only in Vercel's environment
-   * variables — never in this file, never in the repo.
-   */
   async function generateWithGemini({ description, tone, platform, length, imageDataUrl }) {
     const prompt = buildPrompt({ description, tone, platform, length });
 
@@ -79,14 +57,11 @@ Rules:
     }
   }
 
-  /**
-   * Public entry point. This is the ONLY function the rest of the app calls.
-   * Swap the body of this function to change providers — nothing else
-   * in the codebase needs to change.
-   */
   async function generateCaptions(params) {
     return generateWithGemini(params);
   }
 
+  return { generateCaptions };
+})();
   return { generateCaptions };
 })();
