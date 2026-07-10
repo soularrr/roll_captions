@@ -39,6 +39,9 @@ Rules:
     if (!res.ok) {
       const errText = await res.text();
       console.error("Backend proxy error:", res.status, errText);
+      if (res.status === 503) {
+        throw new Error("The AI is a bit busy right now — try again in a few seconds.");
+      }
       throw new Error(`Request failed (${res.status})`);
     }
 
