@@ -50,8 +50,8 @@ const Generator = (() => {
       statusEl.textContent = `Developed ${captions.length} captions`;
     } catch (err) {
       console.error(err);
-      UI.showEmpty("Something went wrong developing your captions — try again.");
-      statusEl.textContent = "Something went wrong";
+      UI.showEmpty(err.message || "Something went wrong developing your captions — try again.");
+      statusEl.textContent = err.message || "Something went wrong";
       statusEl.classList.add("err");
     } finally {
       genBtn.disabled = false;
