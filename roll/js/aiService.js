@@ -45,7 +45,7 @@ Rules:
             role: "user",
             content: [
               { type: "text", text: prompt },
-              { type: "file", puter_path: undefined, url: imageDataUrl }
+              { type: "image_url", image_url: { url: imageDataUrl } }
             ]
           }
         ],
@@ -59,8 +59,18 @@ Rules:
       ? response
       : response.message?.content?.[0]?.text ?? response.message?.content ?? "";
 
-    const clean = text.replace(/```json|```/g, "").trim();
-    return JSON.parse(clean);
+    let clean = text.replace(/```json|```/g, "").trim();
+
+    // Defensive: if the model wrapped the array in extra prose, extract just the array.
+    const arrayMatch = clean.match(/\[[\s\S]*\]/);
+    if (arrayMatch) clean = arrayMatch[0];
+
+    try {
+      return JSON.parse(clean);
+    } catch (parseErr) {
+      console.error("AIService: failed to parse model response as JSON. Raw text was:", text);
+      throw new Error("The AI response wasn't valid JSON — see console for raw output.");
+    }
   }
 
   /**
