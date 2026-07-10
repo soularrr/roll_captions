@@ -2,9 +2,9 @@
  * aiService.js
  * ---------------------------------------------------------------------------
  * The ONLY file in this project that knows which AI provider is in use.
- * Every other file calls generateCaptions() and never touches Puter,
- * Anthropic, OpenAI, or Gemini directly. To switch providers later
- * (e.g. to your own Anthropic API key + backend), only this file changes.
+ * Every other file calls generateCaptions() and never touches the
+ * underlying provider directly. Currently using Google Gemini's free API
+ * (no visitor login required, unlike the earlier Puter version).
  * ---------------------------------------------------------------------------
  */
 
@@ -30,34 +30,51 @@ Rules:
   }
 
   /**
-   * Current provider: Puter.js (free, no API key, user-pays model).
-   * Supports an optional image (data URL or hosted URL) for vision-based captions.
+   * Converts a data URL (e.g. "data:image/jpeg;base64,...") into the
+   * { mimeType, data } shape Gemini's API expects for inline images.
    */
-  async function generateWithPuter({ description, tone, platform, length, imageDataUrl }) {
+  function dataUrlToInlinePart(dataUrl) {
+    const [header, base64Data] = dataUrl.split(",");
+    const mimeType = header.match(/data:(.*);base64/)[1];
+    return { inline_data: { mime_type: mimeType, data: base64Data } };
+  }
+
+  /**
+   * Current provider: Google Gemini, called through our own /api/generate
+   * serverless function. The API key lives only in Vercel's environment
+   * variables — never in this file, never in the repo.
+   */
+  async function generateWithGemini({ description, tone, platform, length, imageDataUrl }) {
     const prompt = buildPrompt({ description, tone, platform, length });
 
-    let response;
+    const parts = [{ text: prompt }];
     if (imageDataUrl) {
-      // Puter's documented image-input signature: chat(prompt, imageUrlOrDataUrl, options)
-      response = await puter.ai.chat(prompt, imageDataUrl, { model: "google/gemini-3.5-flash" });
-    } else {
-      response = await puter.ai.chat(prompt, { model: "claude-sonnet-4-6" });
+      parts.push(dataUrlToInlinePart(imageDataUrl));
     }
 
-    const text = typeof response === "string"
-      ? response
-      : response.message?.content?.[0]?.text ?? response.message?.content ?? "";
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parts })
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("Backend proxy error:", res.status, errText);
+      throw new Error(`Request failed (${res.status})`);
+    }
+
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
     let clean = text.replace(/```json|```/g, "").trim();
-
-    // Defensive: if the model wrapped the array in extra prose, extract just the array.
     const arrayMatch = clean.match(/\[[\s\S]*\]/);
     if (arrayMatch) clean = arrayMatch[0];
 
     try {
       return JSON.parse(clean);
     } catch (parseErr) {
-      console.error("AIService: failed to parse model response as JSON. Raw text was:", text);
+      console.error("AIService: failed to parse Gemini response as JSON. Raw text was:", text);
       throw new Error("The AI response wasn't valid JSON — see console for raw output.");
     }
   }
@@ -68,7 +85,7 @@ Rules:
    * in the codebase needs to change.
    */
   async function generateCaptions(params) {
-    return generateWithPuter(params);
+    return generateWithGemini(params);
   }
 
   return { generateCaptions };
