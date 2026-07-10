@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing 'parts' in request body" });
   }
 
-  const modelsToTry = ["gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite"];
+  const modelsToTry = ["gemini-flash-latest", "gemini-3.1-flash-lite"];
 
   let lastError = null;
 
@@ -36,16 +36,20 @@ export default async function handler(req, res) {
         const errText = await geminiRes.text();
         lastError = { status: geminiRes.status, body: errText };
 
-        if (geminiRes.status !== 503) {
+        if (geminiRes.status !== 503 && geminiRes.status !== 404) {
           return res.status(geminiRes.status).json({ error: errText });
         }
 
+        if (geminiRes.status === 404) break;
         if (attempt === 0) await new Promise(r => setTimeout(r, 800));
       } catch (err) {
         lastError = { status: 500, body: err.message };
       }
     }
   }
+
+  return res.status(lastError?.status || 503).json({ error: lastError?.body || "All models unavailable" });
+}
 
   return res.status(lastError?.status || 503).json({ error: lastError?.body || "All models unavailable" });
 }
