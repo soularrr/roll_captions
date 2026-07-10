@@ -63,5 +63,3 @@ Rules:
 
   return { generateCaptions };
 })();
-  return { generateCaptions };
-})();
