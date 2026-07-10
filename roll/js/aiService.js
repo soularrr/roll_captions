@@ -38,19 +38,8 @@ Rules:
 
     let response;
     if (imageDataUrl) {
-      // Multimodal call: image + text prompt, vision-capable model.
-      response = await puter.ai.chat(
-        [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: prompt },
-              { type: "image_url", image_url: { url: imageDataUrl } }
-            ]
-          }
-        ],
-        { model: "claude-sonnet-4-6" }
-      );
+      // Puter's documented image-input signature: chat(prompt, imageUrlOrDataUrl, options)
+      response = await puter.ai.chat(prompt, imageDataUrl, { model: "google/gemini-3.5-flash" });
     } else {
       response = await puter.ai.chat(prompt, { model: "claude-sonnet-4-6" });
     }
