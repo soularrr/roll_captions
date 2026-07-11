@@ -19,7 +19,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing 'parts' in request body" });
     }
 
-    const modelsToTry = ["gemini-flash-latest", "gemini-3.1-flash-lite"];
+    const modelsToTry = ["gemini-3.1-flash-lite", "gemini-flash-latest"];
     let lastError = null;
 
     for (const model of modelsToTry) {
