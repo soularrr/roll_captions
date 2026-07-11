@@ -41,11 +41,11 @@ export default async function handler(req, res) {
           const errText = await geminiRes.text();
           lastError = { status: geminiRes.status, body: errText };
 
-          if (geminiRes.status !== 503 && geminiRes.status !== 404) {
+          if (geminiRes.status !== 503 && geminiRes.status !== 404 && geminiRes.status !== 429) {
             return res.status(geminiRes.status).json({ error: errText });
           }
 
-          if (geminiRes.status === 404) break;
+          if (geminiRes.status === 404 || geminiRes.status === 429) break;
           if (attempt === 0) await new Promise(r => setTimeout(r, 800));
         } catch (err) {
           lastError = { status: 500, body: err.message };
